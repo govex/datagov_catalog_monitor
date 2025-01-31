@@ -35,16 +35,11 @@ bucket_name = "govex-us-data-archive"
 # defining parameters
 start = 0
 rows = 1000
-end_limit = 305000
+end_limit = 306000
 num_iterations = end_limit // rows
 
 max_retries = 4
 retry_delay = 2  # Wait time in seconds between retries
-
-
-# build in retry attempts
-# save to pickle first; flatten out 
-# upload to S3, add code to do it automatically.
 
 # output folder
 output_base = "data_gov_catalog"
