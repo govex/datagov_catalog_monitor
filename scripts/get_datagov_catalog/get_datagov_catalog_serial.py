@@ -106,7 +106,7 @@ for iteration in range(num_iterations):
                 s3.put_object(
                     Body=json.dumps(error_details, indent=4),
                     Bucket=bucket_name,
-                    Key=error_file
+                    Key=f"Catalog/{error_file}"
                 )
                 print(f"🚨 Error log saved to S3: {error_file}")
 
