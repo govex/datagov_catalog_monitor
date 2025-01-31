@@ -35,7 +35,7 @@ bucket_name = "govex-us-data-archive"
 # defining parameters
 start = 0
 rows = 1000
-end_limit = 350000
+end_limit = 305000
 num_iterations = end_limit // rows
 
 max_retries = 4
@@ -95,7 +95,7 @@ def fetch_and_upload_data(start, rows, max_retries, retry_delay):
                 }
 
                 # File name for error logs
-                error_file = f"Errors/error_{start:06d}_{start+rows:06d}.json"
+                error_file = f"{run_folder}/errors/error_{start:06d}_{start+rows:06d}.json"
 
                 # Upload error log to S3
                 s3.put_object(

@@ -34,7 +34,7 @@ bucket_name = "govex-us-data-archive"
 # defining parameters
 start = 0
 rows = 1000
-end_limit = 350000
+end_limit = 305000
 num_iterations = end_limit // rows
 
 max_retries = 4
@@ -116,8 +116,6 @@ for iteration in range(num_iterations):
                 print(f"🚨 Error log saved to S3: {error_file}")
 
     start += rows
-    if iteration == 1:
-        break
 
 # %%
 ## %% For details
