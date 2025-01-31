@@ -14,7 +14,7 @@ end_limit = 350000
 num_iterations = end_limit // rows
 
 # build in retry attempts
-# save to pickle first
+# save to pickle first; flatten out 
 # upload to S3, add code to do it automatically.
 
 # output folder
