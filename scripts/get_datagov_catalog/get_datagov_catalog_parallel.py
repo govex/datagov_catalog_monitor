@@ -54,7 +54,7 @@ def fetch_and_upload_data(start, rows, max_retries, retry_delay):
     success = False
     for attempt in range(max_retries):
         try:
-            response = requests.get(base_url, timeout=10)
+            response = requests.get(base_url, timeout=30)
             response.raise_for_status()  # Check for HTTP errors
 
             # Parse JSON response

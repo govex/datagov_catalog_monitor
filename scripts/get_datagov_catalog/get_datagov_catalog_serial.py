@@ -34,7 +34,7 @@ bucket_name = "govex-us-data-archive"
 # defining parameters
 start = 0
 rows = 1000
-end_limit = 306000
+end_limit = 310000
 num_iterations = end_limit // rows
 
 max_retries = 4
@@ -61,7 +61,7 @@ for iteration in range(num_iterations):
     success = False
     for attempt in range(max_retries):
         try:
-            response = requests.get(base_url, timeout=10)
+            response = requests.get(base_url, timeout=30)
 
             # Check for HTTP errors
             response.raise_for_status()
