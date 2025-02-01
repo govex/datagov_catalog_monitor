@@ -32,13 +32,12 @@ bucket_name = "govex-us-data-archive"
 
 # %%
 # defining parameters
-start = 0
-rows = 1000
-end_limit = 310000
-num_iterations = end_limit // rows
-
-max_retries = 4
-retry_delay = 2  # Wait time in seconds between retries
+start = 0           # Start index
+rows = 1000         # Number of rows to fetch per request
+end_limit = 310000  # Maximum number of rows to fetch
+num_iterations = end_limit // rows  # Number of iterations
+request_timeout = 60 # Timeout in seconds
+max_retries = 5     # Maximum number of retries
 
 # output folder
 output_base = "data_gov_catalog"
@@ -46,7 +45,8 @@ output_base = "data_gov_catalog"
 timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
 run_folder = os.path.join(output_base, timestamp)
 
-# %% Serial Implementation
+# %% 
+# Serial Implementation
 import time
 
 all_start = time.time()
@@ -61,34 +61,39 @@ for iteration in range(num_iterations):
     success = False
     for attempt in range(max_retries):
         try:
-            response = requests.get(base_url, timeout=30)
+            response = requests.get(base_url, timeout=request_timeout)
 
             # Check for HTTP errors
             response.raise_for_status()
 
             # Parse JSON response
-            package_list = response.json().get('result', {}).get('results', [])
+            server_response = response.json()
+            total_packages = server_response.get('result', {}).get('count', 0)
+            package_list = server_response.get('result', {}).get('results', [])
 
             # File name for successful data
             file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.json'
 
-            # Upload to S3 (Success)
-            s3.put_object(
-                Body=json.dumps(package_list),
-                Bucket=bucket_name,
-                Key=f"Catalog/{file_name}"
-            )
+            # save object to AWS S3 if there is data
+            if len(package_list) > 0:
+                # Upload to S3 (Success)
+                s3.put_object(
+                    Body=json.dumps(package_list),
+                    Bucket=bucket_name,
+                    Key=f"Catalog/{file_name}"
+                )
 
             end_time = time.time()
-            print(f"✅ Success: Rows {start} - {start+rows} in {end_time - start_time:.2f} seconds")
+            print(f"✅ Success: Rows {start} - {start+rows} of {total_packages} in {end_time - start_time:.2f} seconds")
             success = True
             break  # Exit retry loop on success
 
         except Exception as e:
             print(f"⚠️ Attempt {attempt+1} failed: {e}")
             if attempt < max_retries - 1:
+                retry_delay = 2 ^ attempt # Exponential backoff
                 print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
+                time.sleep(retry_delay)  # Exponential backoff
             else:
                 print("❌ Max retries reached. Logging error.")
 
@@ -113,7 +118,11 @@ for iteration in range(num_iterations):
     start += rows
 
 # %%
-## %% For details
+# done
+print(f"✅ Completed: {time.time() - start_time:.2f} seconds")
+
+## %% 
+## For details
 # detail_url = "https://catalog.data.gov/api/3/action/package_show"
 
 # # %%
