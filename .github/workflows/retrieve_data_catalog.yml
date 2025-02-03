@@ -28,4 +28,4 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
-        run: python scripts/get_datagov_catalog/get_datagov_catalog.serial.py
+        run: python scripts/get_datagov_catalog/get_datagov_catalog_serial.py
