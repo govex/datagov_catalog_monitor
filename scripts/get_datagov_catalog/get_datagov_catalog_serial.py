@@ -1,14 +1,12 @@
 # %%
-import pandas as pd
-import os
-import time
-import requests
+import boto3
 from datetime import datetime, timezone
 import json
-import boto3
-from requests.exceptions import RequestException
-import boto3
+import pandas as pd
 import os
+import requests
+from requests.exceptions import RequestException
+import time
 
 # Connecting to AWS S3
 # ADD THE FOLLOWING CREDENTIALS TO YOUR .ENV FILE
