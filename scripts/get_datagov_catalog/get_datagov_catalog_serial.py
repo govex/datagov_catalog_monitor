@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import time
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import boto3
 from requests.exceptions import RequestException
@@ -42,7 +42,7 @@ max_retries = 5     # Maximum number of retries
 # output folder
 output_base = "data_gov_catalog"
 # Create a folder named with the current ISO8601 timestamp
-timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 run_folder = os.path.join(output_base, timestamp)
 
 # %% 
@@ -52,70 +52,81 @@ import time
 all_start = time.time()
 results = []
 
-for iteration in range(num_iterations):
+# it's a function because it can happen in several places
+def log_error_to_s3(url, error, start, rows):
+    error_details = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S"),
+        "url": url,
+        "error": str(error),
+        "start": start,
+        "rows": rows
+    }
+    error_file = f"{run_folder}/errors/error_{start:06d}_{start+rows:06d}.json"
+    try:
+        s3.put_object(
+            Body=json.dumps(error_details, indent=4),
+            Bucket=bucket_name,
+            Key=f"Catalog/{error_file}"
+        )
+        print(f"🚨 Error log saved to S3: {error_file}")
+    except Exception as e:
+        print(f"❌ Failed to log error to S3: {e}")
+
+
+while start < end_limit:
     start_time = time.time()
-    base_url = f"https://catalog.data.gov/api/3/action/package_search?start={start}&rows={rows}"
-    print(f"Fetching: {base_url}")
+    fetch_url = f"https://catalog.data.gov/api/3/action/package_search?start={start}&rows={rows}"
+    print(f"Fetching: {fetch_url}")
 
     # Retry logic
     success = False
     for attempt in range(max_retries):
         try:
-            response = requests.get(base_url, timeout=request_timeout)
-
-            # Check for HTTP errors
+            response = requests.get(fetch_url, timeout=request_timeout)
             response.raise_for_status()
-
-            # Parse JSON response
             server_response = response.json()
             total_packages = server_response.get('result', {}).get('count', 0)
             package_list = server_response.get('result', {}).get('results', [])
+            success = True
+            break  # Exit retry loop on success
 
-            # File name for successful data
-            file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.json'
+        except RequestException as e:
+            print(f"⚠️ Attempt {attempt+1} failed: {e}")
+            if attempt < max_retries - 1:
+                retry_delay = 2 ** attempt  # Exponential backoff
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                log_error_to_s3(fetch_url, e, start, rows)
+                start += rows
+                break
 
-            # save object to AWS S3 if there is data
-            if len(package_list) > 0:
-                # Upload to S3 (Success)
+        except json.JSONDecodeError as e:
+            print(f"❌ Error parsing JSON: {e}")
+            if attempt < max_retries - 1:
+                print("Retrying...")
+            else:
+                log_error_to_s3(fetch_url, e, start, rows)
+                start += rows
+                break
+
+    if success:
+        if package_list:
+            try:
+                file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.json'
                 s3.put_object(
                     Body=json.dumps(package_list),
                     Bucket=bucket_name,
                     Key=f"Catalog/{file_name}"
                 )
+                end_time = time.time()
+                print(f"✅ Success: Rows {start} - {start+rows} of {total_packages} written to AWS: ({end_time - start_time:.2f} seconds)")
+            except Exception as e:
+                print(f"❌ Error saving rows {start} - {start+rows} of {total_packages} to S3: {e}")
+        else:
+            print("🟡 No data to save; skipping")
+        start += rows
 
-            end_time = time.time()
-            print(f"✅ Success: Rows {start} - {start+rows} of {total_packages} in {end_time - start_time:.2f} seconds")
-            success = True
-            break  # Exit retry loop on success
-
-        except Exception as e:
-            print(f"⚠️ Attempt {attempt+1} failed: {e}")
-            if attempt < max_retries - 1:
-                retry_delay = 2 ^ attempt # Exponential backoff
-                print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)  # Exponential backoff
-            else:
-                print("❌ Max retries reached. Logging error.")
-
-                # Error details
-                error_details = {
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "url": base_url,
-                    "error": str(e)
-                }
-
-                # File name for error logs
-                error_file = f"{run_folder}/errors/error_{start:06d}_{start+rows:06d}.json"
-
-                # Upload error log to S3
-                s3.put_object(
-                    Body=json.dumps(error_details, indent=4),
-                    Bucket=bucket_name,
-                    Key=f"Catalog/{error_file}"
-                )
-                print(f"🚨 Error log saved to S3: {error_file}")
-
-    start += rows
 
 # %%
 # done
