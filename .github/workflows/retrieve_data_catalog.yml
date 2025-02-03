@@ -1,4 +1,4 @@
-name: Scheduled Python Script Runner
+name: Retrieve Data.gov Catalog
 
 on:
   schedule:
