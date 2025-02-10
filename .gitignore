@@ -1,2 +1,5 @@
 .env
 scripts/get_datagov_catalog/scraper_prev.py
+data/data_gov_catalog/
+data/data_gov_catalog_ldjson/
+.DS_Store
