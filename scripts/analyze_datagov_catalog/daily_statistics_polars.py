@@ -64,9 +64,9 @@ def get_json(file_path: str = None) -> list | dict:
             return json.load(file)
     return {}
 
-# scan a folder for ldjson files and check for improper line breaks
+# scan a folder for ndson files and check for improper line breaks
 # the function returns True if any line breaks are found
-def check_ldjson_for_line_breaks(folder_paths: list[str]) -> bool:
+def check_ndson_for_line_breaks(folder_paths: list[str]) -> bool:
     return_value = False
     for folder_path in folder_paths:
         for root, dirs, files in os.walk(folder_path):
@@ -98,19 +98,19 @@ logging.debug("functions loaded")
 
 # %%
 # load the data to a local object
-ldjson_folder = get_recent_catalog_folder(local_config["input"]["data_folder"])
-ldjson_files = get_json_file_list(ldjson_folder)
+ndson_folder = get_recent_catalog_folder(local_config["input"]["data_folder"])
+ndson_files = get_json_file_list(ndson_folder)
 
-ldjson_older_folder = get_recent_catalog_folder(local_config["input"]["data_folder"], age=1)
-ldjson_older_files = get_json_file_list(ldjson_older_folder)
+ndson_older_folder = get_recent_catalog_folder(local_config["input"]["data_folder"], age=1)
+ndson_older_files = get_json_file_list(ndson_older_folder)
 
 logging.debug("file lists loaded")
 
 # %%
 # scan the relevant files for invalid line breaks
-if check_ldjson_for_line_breaks([ldjson_folder, ldjson_older_folder]):
+if check_ndson_for_line_breaks([ndson_folder, ndson_older_folder]):
     # end the script if any invalid line breaks are found
-    logging.error("Invalid line breaks found in the ldjson files.")
+    logging.error("Invalid line breaks found in the ndson files.")
     raise SystemExit
 
 logging.debug("line breaks checked")
@@ -118,8 +118,8 @@ logging.debug("line breaks checked")
 # %%
 # load the data into a polars lazyframes
 # this is done to avoid loading the entire dataset into memory
-catalog = pl.scan_ndjson(ldjson_files, ignore_errors=True)
-catalog_older = pl.scan_ndjson(ldjson_older_files, ignore_errors=True)
+catalog = pl.scan_ndjson(ndson_files, ignore_errors=True)
+catalog_older = pl.scan_ndjson(ndson_older_files, ignore_errors=True)
 
 logging.debug("data lazy loaded")
 

@@ -1,6 +1,6 @@
 # given an input and output folder, convert all json files
-#  in the input folder to ldjson files in the output folder
-# NOTE: LDJSON cannot have line breaks in the JSON strings!
+#  in the input folder to ndson files in the output folder
+# NOTE: ndson cannot have line breaks in the JSON strings!
 
 # %%
 # imports and initialization
@@ -11,8 +11,8 @@ source_dir = '../data/data_gov_catalog'
 target_dir = '../data/data_gov_catalog_ndjson'
 
 # %%
-# converts a tree of json files to a tree of ldjson files
-def convert_json_to_ldjson(source_dir, target_dir):
+# converts a tree of json files to a tree of ndson files
+def convert_json_to_ndson(source_dir, target_dir):
     for root, dirs, files in os.walk(source_dir):
         for filename in files:
             if filename.endswith('.json'):
@@ -30,11 +30,11 @@ def convert_json_to_ldjson(source_dir, target_dir):
                     for item in data:
                         out_f.write(json.dumps(item) + '\n')
 
-# scan a folder for ldjson files and check for improper line breaks
-def check_ldjson_for_line_breaks(folder_path):
+# scan a folder for ndson files and check for improper line breaks
+def check_ndson_for_line_breaks(folder_path):
     for root, dirs, files in os.walk(folder_path):
         for file_name in files:
-            if file_name.endswith('.ldjson'):
+            if file_name.endswith('.ndson'):
                 file_path = os.path.join(root, file_name)
                 with open(file_path, 'r', encoding='utf-8') as f:
                     for i, line in enumerate(f, start=1):
@@ -46,6 +46,6 @@ def check_ldjson_for_line_breaks(folder_path):
 # %%
 # run the conversion
 if __name__ == '__main__':
-    convert_json_to_ldjson(source_dir, target_dir)
+    convert_json_to_ndson(source_dir, target_dir)
 
 
