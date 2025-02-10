@@ -48,7 +48,7 @@ def get_recent_catalog_folder(root_catalog_folder: str = None, age: int = 0) -> 
 # get the list of json files in the folder
 def get_json_file_list(path: str = None) -> list:
     if path:
-        return glob.glob(f"{path}/*.ldjson")
+        return glob.glob(f"{path}/*.ndjson")
     return []
 
 # get the list of error files in the folder
@@ -71,7 +71,7 @@ def check_ldjson_for_line_breaks(folder_paths: list[str]) -> bool:
     for folder_path in folder_paths:
         for root, dirs, files in os.walk(folder_path):
             for file_name in files:
-                if file_name.endswith(".ldjson"):
+                if file_name.endswith(".ndjson"):
                     file_path = os.path.join(root, file_name)
                     with open(file_path, "r", encoding="utf-8") as f:
                         for i, line in enumerate(f, start=1):

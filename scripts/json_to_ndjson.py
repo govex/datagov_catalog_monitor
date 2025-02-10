@@ -24,7 +24,7 @@ def convert_json_to_ldjson(source_dir, target_dir):
                 out_dir = os.path.join(target_dir, rel_path)
                 os.makedirs(out_dir, exist_ok=True)
 
-                out_name = os.path.splitext(filename)[0] + '.ldjson'
+                out_name = os.path.splitext(filename)[0] + '.ndjson'
                 out_path = os.path.join(out_dir, out_name)
                 with open(out_path, 'w', encoding='utf-8') as out_f:
                     for item in data:
