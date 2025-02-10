@@ -122,7 +122,7 @@ while start < end_limit:
                     if check_length == 1:
                         valid_lines.append(json_object)
                     else:
-                        # logging errors out
+                        # error if we have more than 1 new line breaks in an object
                         print(f'Error in id = {data["id"]} at line number = {i}')
                         error_lines.append(json_object)
 
