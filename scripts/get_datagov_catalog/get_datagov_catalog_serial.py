@@ -38,7 +38,7 @@ request_timeout = 60 # Timeout in seconds
 max_retries = 5     # Maximum number of retries
 
 # output folder
-output_base = "data_gov_catalog"
+output_base = "data_gov_catalog_ndjson"
 # Create a folder named with the current ISO8601 timestamp
 timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 run_folder = os.path.join(output_base, timestamp)
@@ -111,12 +111,31 @@ while start < end_limit:
     if success:
         if package_list:
             try:
-                file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.json'
+                valid_lines = []
+                error_lines = []
+
+                for i, data in enumerate(package_list):
+                    json_object = json.dumps(data)
+                    check_length = len(json_object.splitlines())
+                    
+                    # checking for cases where we have invalid newline delimiters
+                    if check_length == 1:
+                        valid_lines.append(json_object)
+                    else:
+                        # error if we have more than 1 new line breaks in an object
+                        print(f'Error in id = {data["id"]} at line number = {i}')
+                        error_lines.append(json_object)
+
+                # creating an ndjson object
+                clean_ndjson_object = "\n".join(valid_lines)
+                file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.ndjson'
+
                 s3.put_object(
-                    Body=json.dumps(package_list),
+                    Body=clean_ndjson_object,
                     Bucket=bucket_name,
                     Key=f"Catalog/{file_name}"
                 )
+
                 end_time = time.time()
                 print(f"✅ Success: Rows {start} - {start+rows} of {total_packages} written to AWS: ({end_time - start_time:.2f} seconds)")
             except Exception as e:
