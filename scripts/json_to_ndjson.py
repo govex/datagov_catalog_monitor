@@ -8,7 +8,7 @@ import os
 import json
 
 source_dir = '../data/data_gov_catalog'
-target_dir = '../data/data_gov_catalog_ldjson'
+target_dir = '../data/data_gov_catalog_ndjson'
 
 # %%
 # converts a tree of json files to a tree of ldjson files

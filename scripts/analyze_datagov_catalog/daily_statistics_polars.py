@@ -20,7 +20,7 @@ _script_start = time.time()
 
 local_config = {
     "input": {
-        "data_folder": "../../data/data_gov_catalog_ldjson"
+        "data_folder": "../../data/data_gov_catalog_ndjson"
     },
     "output": {
         "statistics_folder": "../data/daily_statistics"
