@@ -1,5 +1,32 @@
-.env
+
 scripts/get_datagov_catalog/scraper_prev.py
 data/data_gov_catalog/
 data/data_gov_catalog_ndjson/
+
+
+
+
+# OS
 .DS_Store
+Thumbs.db
+
+# nodejs
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/web/.svelte-kit
+/web/build
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
