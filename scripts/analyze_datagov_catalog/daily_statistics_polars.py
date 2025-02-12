@@ -15,6 +15,8 @@ logging.basicConfig(
 )
 _script_start = time.time()
 
+logging.debug("startng up...")
+
 # needed to support categoricals across multiple files
 # pl.enable_string_cache()
 
@@ -23,7 +25,7 @@ local_config = {
         "data_folder": "../../data/data_gov_catalog_ndjson"
     },
     "output": {
-        "statistics_folder": "../data/daily_statistics"
+        "statistics_folder": "../../data/daily_statistics"
     }
 }
 
@@ -114,45 +116,39 @@ def get_catalog_differences(older: pl.LazyFrame, newer: pl.LazyFrame) -> dict:
 logging.debug("functions loaded")
 
 # %%
-# get with the work
-folders = get_recent_catalog_folders(local_config["input"]["data_folder"], cycles=13)
+# get with the work and output the results
 
-results = {}
+# this function call supports a cycles parameter to go back further than the default 1
+folders = get_recent_catalog_folders(local_config["input"]["data_folder"])
+
+os.makedirs(local_config["output"]["statistics_folder"], exist_ok=True)
 
 for i in range(len(folders) - 1):
     logging.debug(f"processing {folders[i]}...")
     ndjson_files = get_json_file_list(folders[i])
     ndjson_older_files = get_json_file_list(folders[i + 1])
 
+    # initialize the lazyframes for the current data and prior cycle
     catalog = filter_catalog(pl.scan_ndjson(ndjson_files, ignore_errors=True), excluded_organizations=excluded_organizations)
     catalog_older = filter_catalog(pl.scan_ndjson(ndjson_older_files, ignore_errors=True), excluded_organizations=excluded_organizations)
 
     datetimestring = get_date_from_folder_name(folders[i])
 
-    results[datetimestring] = {
+    # generate the result object (this can take some time for each pass)
+    result = {
         "date": datetimestring,
         "current_fileset": folders[i],
         "comparison_fileset": folders[i + 1],
         "counts": collect_catalog_info(catalog),
         "deltas": get_catalog_differences(older=catalog_older, newer=catalog)
-    }    
+    }
 
-logging.debug("file lists loaded")
+    # output the result
+    filename = os.path.join(local_config["output"]["statistics_folder"], f"{datetimestring}.json")
+    with open(filename, mode="w") as file:
+        json.dump(result, file)
+        logging.debug(f"saved statistics to {file.name}...")
 
-# %%
-# save the statistics to ~/Downloads/payload.json (temporary)
-# this will be replaced with a webhook call to github actions
-
-# create the output folder if it doesn't exist
-os.makedirs(input["output"]["statistics_folder"], exist_ok=True)
-
-# itererate through the results and save them as individual files to the output folder
-for key, value in results.items():
-    with open(os.path.join(input["output"]["statistics_folder"],f"{key}.json"), mode="w") as file:
-        logging.debug(f"saving statistics to {file.name}...")
-        json.dump(value, file)
-
-logging.info("statistics saved")
 
 # %%
 # wrap up
