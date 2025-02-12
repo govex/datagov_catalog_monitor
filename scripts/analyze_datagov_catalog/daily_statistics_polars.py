@@ -46,6 +46,10 @@ def get_recent_catalog_folders(root_catalog_folder: str = None, cycles: int = 1)
             return folders[:cycles+1]
     return None
 
+def get_date_from_folder_name(folder_name: str = None) -> str:
+    if folder_name:
+        return os.path.basename(folder_name)
+
 # get the list of json files in the folder
 def get_json_file_list(path: str = None) -> list:
     if path:
@@ -111,7 +115,7 @@ logging.debug("functions loaded")
 
 # %%
 # get with the work
-folders = get_recent_catalog_folders(local_config["input"]["data_folder"])
+folders = get_recent_catalog_folders(local_config["input"]["data_folder"], cycles=13)
 
 results = {}
 
@@ -123,7 +127,10 @@ for i in range(len(folders) - 1):
     catalog = filter_catalog(pl.scan_ndjson(ndjson_files, ignore_errors=True), excluded_organizations=excluded_organizations)
     catalog_older = filter_catalog(pl.scan_ndjson(ndjson_older_files, ignore_errors=True), excluded_organizations=excluded_organizations)
 
-    results[folders[i]] = {
+    datetimestring = get_date_from_folder_name(folders[i])
+
+    results[datetimestring] = {
+        "date": datetimestring,
         "current_fileset": folders[i],
         "comparison_fileset": folders[i + 1],
         "counts": collect_catalog_info(catalog),
@@ -135,9 +142,15 @@ logging.debug("file lists loaded")
 # %%
 # save the statistics to ~/Downloads/payload.json (temporary)
 # this will be replaced with a webhook call to github actions
-with open(os.path.join(os.path.expanduser("~/Downloads"),"payload.json"), mode="w") as file:
-    logging.debug(f"saving statistics to {file.name}...")
-    json.dump(results, file)
+
+# create the output folder if it doesn't exist
+os.makedirs(input["output"]["statistics_folder"], exist_ok=True)
+
+# itererate through the results and save them as individual files to the output folder
+for key, value in results.items():
+    with open(os.path.join(input["output"]["statistics_folder"],f"{key}.json"), mode="w") as file:
+        logging.debug(f"saving statistics to {file.name}...")
+        json.dump(value, file)
 
 logging.info("statistics saved")
 
