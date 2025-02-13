@@ -120,7 +120,7 @@ logging.debug("functions loaded")
 # get with the work and output the results
 
 # this function call supports a cycles parameter to go back further than the default 1
-folders = get_recent_catalog_folders(local_config["input"]["data_folder"], 14)
+folders = get_recent_catalog_folders(local_config["input"]["data_folder"])
 
 os.makedirs(local_config["output"]["statistics_folder"], exist_ok=True)
 
