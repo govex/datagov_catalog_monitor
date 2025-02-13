@@ -84,8 +84,9 @@ def collect_catalog_info(catalog: pl.LazyFrame) -> dict:
     catalog_info = {}
 
     catalog_counts_by_organization = catalog \
-        .group_by("organization") \
+        .group_by(pl.col("organization").struct.field("id").alias("organization_id")) \
         .agg([
+            pl.col("organization").first().alias("organization"),
             pl.len().alias("catalog_count"),
             pl.col("resources").list.len().sum().alias("resource_count")
         ]) \
@@ -119,7 +120,7 @@ logging.debug("functions loaded")
 # get with the work and output the results
 
 # this function call supports a cycles parameter to go back further than the default 1
-folders = get_recent_catalog_folders(local_config["input"]["data_folder"])
+folders = get_recent_catalog_folders(local_config["input"]["data_folder"], 14)
 
 os.makedirs(local_config["output"]["statistics_folder"], exist_ok=True)
 
