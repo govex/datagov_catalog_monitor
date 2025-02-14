@@ -1,5 +1,6 @@
 <script lang="ts">
-    import OrganizationPanel from '$lib/components/OrganizationPanel.svelte';
+    import { Layout } from 'svelte-5-ui-lib';
+    import OrganizationCard from '$lib/components/OrganizationCard.svelte';
     import { loadOrganizations } from '$lib/loadOrganizations';
     import { onMount } from 'svelte';
 
@@ -12,12 +13,13 @@
     });
 </script>
 
-<h1>Organizations ({ organizations.length })</h1>
+<h1>Data.gov Agencies / Bureaus / Departments ({ organizations.length })</h1>
+<p>(Changes reported are since November 19, 2024)</p>
 
-<div>
-
-{#each organizations as organization}
-    <OrganizationPanel {organization} />
-{/each}
-
+<div class="flex">
+    <Layout class="grid-cols-1 gap-6 sm:grid-cols-3">
+        {#each organizations as organization}
+            <OrganizationCard {organization} />
+        {/each}
+    </Layout>
 </div>

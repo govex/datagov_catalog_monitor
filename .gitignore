@@ -2,6 +2,8 @@
 scripts/get_datagov_catalog/scraper_prev.py
 data/data_gov_catalog/
 data/data_gov_catalog_ndjson/
+data/errored_catalogs/
+data/errored_catalogs_ndjson/
 
 
 

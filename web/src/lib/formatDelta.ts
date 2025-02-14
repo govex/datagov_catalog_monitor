@@ -1,4 +1,6 @@
 export function formatDelta (diff: number | null): string {
     if (diff === null) return "N/A"; // Handle edge case where there's no difference
-    return diff >= 0 ? `⬆️ ${diff}` : `${diff}`; // Add "+" for positive numbers
+    if (diff < 0) return `⬇ ${Math.abs(diff)}`; // Handle negative difference
+    if (diff > 0) return `⬆ ${diff}`; // Handle positive difference
+    return ''; // Handle negative difference
 }
