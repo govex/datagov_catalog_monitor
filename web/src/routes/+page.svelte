@@ -16,10 +16,10 @@
 <h1>Data.gov Agencies / Bureaus / Departments ({ organizations.length })</h1>
 <p>(Changes reported are since November 19, 2024)</p>
 
-<div class="flex">
-    <Layout class="grid-cols-1 gap-6 sm:grid-cols-3">
+<div class="container mx-auto flex flex-wrap items-center">
+    <!-- <Layout class="grid-cols-1 gap-6 sm:grid-cols-3"> -->
         {#each organizations as organization}
             <OrganizationCard {organization} />
         {/each}
-    </Layout>
+    <!-- </Layout> -->
 </div>
