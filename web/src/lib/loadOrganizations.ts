@@ -15,17 +15,15 @@ export async function loadOrganizations(): Promise<{ organizations: Organization
 
     const rawData = await response.json();
 
-    // Ensure proper types and parse dates
+    // Ensure proper types and coerce incoming data structure into the type model
     const organizations: Organization[] = rawData.map((org: Organization) => ({
         ...org,
-        catalog_entry_counts: org.catalog_entry_counts.map((entry: EntryCount) => ({
-            ...entry,
-            date: parseCustomDate(entry.date) // Convert string to Date
-        })),
-        resource_entry_counts: org.resource_entry_counts.map((entry: EntryCount) => ({
-            ...entry,
-            date: parseCustomDate(entry.date) // Convert string to Date
-        }))
+        catalog_entry_counts: Object.entries(org.catalog_entry_counts)
+            .map(([key, value]) => { return {date: DateTime.fromISO(key), count: value} })
+            .sort((a, b) => a.date.toMillis() - b.date.toMillis()),
+        resource_entry_counts: Object.entries(org.resource_entry_counts)
+            .map(([key, value]) => { return {date: DateTime.fromISO(key), count: value} })
+            .sort((a, b) => a.date.toMillis() - b.date.toMillis()),
     }));
 
     return { organizations };

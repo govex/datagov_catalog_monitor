@@ -1,3 +1,5 @@
+import type { DateTime } from "luxon";
+
 // src/lib/types.ts
 export interface CycleData {
     date: string;
@@ -41,6 +43,6 @@ export interface Organization {
 }
 
 export interface EntryCount {
-    date: string;
+    date: DateTime;
     count: number;
 }
