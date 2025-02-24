@@ -149,6 +149,7 @@ for i in range(len(folders) - 1):
     with open(filename, mode="w") as file:
         json.dump(result, file)
         logging.debug(f"saved statistics to {file.name}...")
+        logging.debug(f"added: {len(result['deltas']['added'])}, removed: {len(result['deltas']['removed'])}")
 
 
 # %%
