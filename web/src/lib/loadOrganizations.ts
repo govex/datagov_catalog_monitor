@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import type { Organization, EntryCount } from "$lib/types";
+import type { Organization, CatalogData, EntryCount } from "$lib/types";
 
 // Function to parse a date string (Assumes format: YYYYMMDDTHHMMSS)
 const parseCustomDate = (dateStr: string): Date => {
@@ -7,7 +7,7 @@ const parseCustomDate = (dateStr: string): Date => {
 };  
 
 // Function to load and parse JSON data
-export async function loadOrganizations(): Promise<{ organizations: Organization[] }> {
+export async function loadHomePageData(): Promise<{ catalogData: CatalogData }> {
     const response = await fetch('/data/organizations.json'); // Load from static file
     if (!response.ok) {
         throw new Error("Failed to load JSON data");
@@ -15,17 +15,32 @@ export async function loadOrganizations(): Promise<{ organizations: Organization
 
     const rawData = await response.json();
 
-    // Ensure proper types and coerce incoming data structure into the type model
-    const organizations: Organization[] = rawData.map((org: Organization) => ({
-        ...org,
-        catalog_entry_counts: Object.entries(org.catalog_entry_counts)
-            .map(([key, value]) => { return {date: DateTime.fromISO(key), count: value} })
-            .sort((a, b) => a.date.toMillis() - b.date.toMillis()),
-        resource_entry_counts: Object.entries(org.resource_entry_counts)
-            .map(([key, value]) => { return {date: DateTime.fromISO(key), count: value} })
-            .sort((a, b) => a.date.toMillis() - b.date.toMillis()),
-    }));
+    const catalogData: CatalogData = {
+        last_updated: DateTime.fromISO(rawData.last_updated),
+        catalog_daily_statistics: [],
+        resource_daily_statistics: [],
+        organizations: []
+    };
 
-    return { organizations };
+    const organizations: Organization[] = []
+    // Ensure proper types and coerce incoming data structure into the type model
+    for (const org of Object.values(rawData.organizations) as any[]) {
+        catalogData.organizations.push({
+            ...org,
+            catalog_entry_counts: Object.entries(org.catalog_entry_counts).map(([key, value]) => {
+                return { date: DateTime.fromISO(key), count: value };
+            }),
+            resource_entry_counts: Object.entries(org.catalog_entry_counts).map(([key, value]) => {
+                return { date: DateTime.fromISO(key), count: value };
+            })
+        });
+    };
+
+
+    // window.rawData = rawData;
+    // window.catalogData = catalogData;
+
+
+    return { catalogData };
 }
 

@@ -27,6 +27,13 @@ export interface CycleOrganization {
     resource_count: number;
 }
 
+export interface CatalogData {
+    last_updated: DateTime;
+    catalog_daily_statistics: EntryCount[];
+    resource_daily_statistics: EntryCount[];
+    organizations: Organization[];
+}
+
 export interface Organization {
     id: string;
     name: string;
@@ -38,8 +45,8 @@ export interface Organization {
     is_organization: boolean;
     approval_status: string;
     state: string;
-    catalog_entry_counts: Array<EntryCount>;
-    resource_entry_counts: Array<EntryCount>;
+    catalog_entry_counts: EntryCount[];
+    resource_entry_counts: EntryCount[];
 }
 
 export interface EntryCount {
