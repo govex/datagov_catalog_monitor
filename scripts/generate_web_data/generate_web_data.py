@@ -23,7 +23,35 @@ local_config = {
     }
 }
 
-organizations = {}
+sample_output = {
+    "last_updated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "organization_count": 0,
+    "catalog_daily_statistics": {
+        "2020-01-01T00:00:00Z": {
+            "added": 0,
+            "removed": 0,
+            "count": 0,
+            "net_change": 0
+        }
+    },
+    "resource_daily_statistics": {
+        "2020-01-01T00:00:00Z": {
+            "added": 0,
+            "removed": 0,
+            "total_count": 0,
+            "total_delta": 0
+        }
+    },
+    "organizations": []
+}
+
+output = {
+    "last_updated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "organizations": {}
+}
+
+excluded_organization_keys = ['timeline', 'city']
+
 
 logging.debug("Initialized")
 
@@ -48,36 +76,39 @@ for json_file in daily_json_files:
     current_date_iso_string = current_date.isoformat()
 
     for org in daily_data["counts"]["organizations"]:
-        if org["id"] not in organizations:
-            output_org = copy.deepcopy(org)
+        if org["id"] not in output["organizations"]:
+            output_org = { k: v for k, v in org.items() if k not in excluded_organization_keys }
             output_org["catalog_entry_counts"] = {}
             output_org["resource_entry_counts"] = {}
             del output_org["catalog_count"]
             del output_org["resource_count"]
-            organizations[org["id"]] = output_org
+            output["organizations"][org["id"]] = output_org
         else:
-            output_org = organizations[org["id"]]
+            output_org = output["organizations"][org["id"]]
 
         output_org["catalog_entry_counts"][current_date_iso_string] = org["catalog_count"]
         output_org["resource_entry_counts"][current_date_iso_string] = org["resource_count"]
 
+    total_count = daily_data["counts"]["total_records"]
+    additions = len(daily_data.get("deltas", {}).get("added", []))
+    deletions = len(daily_data.get("deltas", {}).get("removed", []))
+
+
+    logging.info(f"Total Datasets: { total_count }; Deletions: { deletions }; Additions: { additions}")
     
 
 # sort organizations by organization.title property
-organizations = dict(sorted(organizations.items(), key=lambda x: x[1]["title"]))
+output["organizations"] = dict(sorted(output["organizations"].items(), key=lambda x: x[1]["title"]))
 
 # %%
 # write the web data to the output folder
 
-excluded_keys = ['timeline', 'city']
 
 # write the organizations file
 with open(os.path.join(local_config["output"]["web_data_folder"], "organizations.json"), "w", encoding="utf-8") as f:
+    json.dump(output, f, ensure_ascii=False)
 
-    filtered_dict = {k: v for k, v in organizations.items() if k not in excluded_keys}
-    json.dump(list(filtered_dict.values()), f, ensure_ascii=False)
-
-for id, org in organizations.items():
+for id, org in output["organizations"].items():
     with open(os.path.join(local_config["output"]["web_data_folder"], "organizations", f"{id}.json"), "w", encoding="utf-8") as f:
         json.dump(org, f, ensure_ascii=False)
 
