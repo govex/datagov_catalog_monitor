@@ -1,1 +1,31 @@
-{"organization_id": "aa84d2f5-8a8a-4ae6-a7a6-c9a47ab8dcd5", "id": "aa84d2f5-8a8a-4ae6-a7a6-c9a47ab8dcd5", "name": "coa-gatech-edu", "title": "Georgia Tech Center for GIS College of Architecture", "type": "organization", "description": "Georgia Tech Center for GIS College of Architecture", "image_url": "", "created": "2020-11-10T15:50:25.243863", "is_organization": true, "approval_status": "approved", "state": "active", "catalog_entry_counts": {"2024-11-19T00:00:00+00:00": 1}, "resource_entry_counts": {"2024-11-19T00:00:00+00:00": 2}}
+{
+  "approval_status": "approved",
+  "catalog_entry_counts": [
+    {
+      "n": 1,
+      "t": "2024-11-19T00:00:00+00:00",
+      "Δ": 0,
+      "↑": 0,
+      "↓": 0
+    }
+  ],
+  "created": "2020-11-10T15:50:25.243863",
+  "description": "Georgia Tech Center for GIS College of Architecture",
+  "id": "aa84d2f5-8a8a-4ae6-a7a6-c9a47ab8dcd5",
+  "image_url": "",
+  "is_organization": true,
+  "name": "coa-gatech-edu",
+  "organization_id": "aa84d2f5-8a8a-4ae6-a7a6-c9a47ab8dcd5",
+  "resource_entry_counts": [
+    {
+      "n": 2,
+      "t": "2024-11-19T00:00:00+00:00",
+      "Δ": 0,
+      "↑": 0,
+      "↓": 0
+    }
+  ],
+  "state": "active",
+  "title": "Georgia Tech Center for GIS College of Architecture",
+  "type": "organization"
+}
