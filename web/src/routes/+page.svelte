@@ -11,6 +11,7 @@
 
     onMount(async () => {
         catalogData = (await loadHomePageData()).catalogData;
+        console.log(catalogData);
     });
 </script>
 

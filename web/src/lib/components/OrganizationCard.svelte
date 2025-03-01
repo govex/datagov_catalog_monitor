@@ -12,7 +12,7 @@
         <Heading tag="h3" class="text-primary-700 dark:text-primary-500 flex-grow">{organization.title}</Heading>
         <div class="flex flex-row justify-between content-center text-sm text-gray-500 v-full mt-5">
             <Secondary>
-                Datasets: { organization.catalog_entry_counts[organization.catalog_entry_counts.length - 1].count}     
+                Datasets: { organization.catalog_entry_counts[organization.catalog_entry_counts.length - 1].n}     
             </Secondary>
             <ColoredDeltaBadge count={ calculateEntryCountDelta(organization.catalog_entry_counts) } />
         </div>           

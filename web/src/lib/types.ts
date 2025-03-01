@@ -50,6 +50,9 @@ export interface Organization {
 }
 
 export interface EntryCount {
-    date: DateTime;
-    count: number;
+    t: DateTime; // date
+    n: number; // count
+    Δ: number; // change
+    ↑: number; // increase
+    ↓: number; // decrease
 }

@@ -12,5 +12,5 @@ export function calculateEntryCountDelta(entryCounts: EntryCount[], rangeIndexes
     const firstEntry = entryCounts[rangeIndexes[0]];
     const lastEntry = entryCounts[rangeIndexes[1]];
 
-    return lastEntry.count - firstEntry.count;
+    return lastEntry.n - firstEntry.n;
 }

@@ -15,32 +15,37 @@ export async function loadHomePageData(): Promise<{ catalogData: CatalogData }> 
 
     const rawData = await response.json();
 
-    const catalogData: CatalogData = {
-        last_updated: DateTime.fromISO(rawData.last_updated),
-        catalog_daily_statistics: [],
-        resource_daily_statistics: [],
-        organizations: []
+    window.rawData = rawData;
+
+    rawData.last_updated = DateTime.fromISO(rawData.last_updated);
+
+    // coerce date strings to DateTime objects
+    for (const ce: EntryCount of rawData.catalog_daily_statistics) {
+        ce.t = DateTime.fromISO(ce.t);
     };
 
-    const organizations: Organization[] = []
-    // Ensure proper types and coerce incoming data structure into the type model
+    for (const ce: EntryCount of rawData.resource_daily_statistics) {
+        ce.t = DateTime.fromISO(ce.t);
+    }
+
+
+    // iterate through the dictionary of organizations and coerce the date strings to DateTime objects
     for (const org of Object.values(rawData.organizations) as any[]) {
-        catalogData.organizations.push({
-            ...org,
-            catalog_entry_counts: Object.entries(org.catalog_entry_counts).map(([key, value]) => {
-                return { date: DateTime.fromISO(key), count: value };
-            }),
-            resource_entry_counts: Object.entries(org.catalog_entry_counts).map(([key, value]) => {
-                return { date: DateTime.fromISO(key), count: value };
-            })
-        });
-    };
+        for (const ce: EntryCount of org.catalog_entry_counts) {
+            ce.t = DateTime.fromISO(ce.t);
+        }
+        for (const ce: EntryCount of org.resource_entry_counts) {
+            ce.t = DateTime.fromISO(ce.t);
+        }
+    }
+
+    // convert organizations to an array
+    rawData.organizations = Object.values(rawData.organizations) as Organization[];
+    rawData.organizations.sort((a, b) => a.title.localeCompare(b.title));
+
+    console.log(rawData);
 
 
-    // window.rawData = rawData;
-    // window.catalogData = catalogData;
-
-
-    return { catalogData };
+    return { catalogData:rawData };
 }
 
