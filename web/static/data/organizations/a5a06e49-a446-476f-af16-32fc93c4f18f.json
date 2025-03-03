@@ -1,0 +1,31 @@
+{
+  "approval_status": "approved",
+  "catalog_entry_counts": [
+    {
+      "n": 343,
+      "t": "2025-03-03T07:03:23+00:00",
+      "Δ": 0,
+      "↑": 343,
+      "↓": 0
+    }
+  ],
+  "created": "2020-11-10T15:27:40.660679",
+  "description": "",
+  "id": "a5a06e49-a446-476f-af16-32fc93c4f18f",
+  "image_url": "https://raw.githubusercontent.com/GSA/logo/refs/heads/master/opendataphilly-black-med.png",
+  "is_organization": true,
+  "name": "city-of-philadelphia",
+  "organization_id": "a5a06e49-a446-476f-af16-32fc93c4f18f",
+  "resource_entry_counts": [
+    {
+      "n": 2250,
+      "t": "2025-03-03T07:03:23+00:00",
+      "Δ": 0,
+      "↑": 343,
+      "↓": 0
+    }
+  ],
+  "state": "active",
+  "title": "City of Philadelphia",
+  "type": "organization"
+}
