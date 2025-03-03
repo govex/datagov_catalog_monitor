@@ -136,7 +136,7 @@ output["organizations"] = dict(sorted(output["organizations"].items(), key=lambd
 
 
 # write the organizations file
-with open(os.path.join(local_config["output"]["web_data_folder"], "organizations.json"), "w", encoding="utf-8") as f:
+with open(os.path.join(local_config["output"]["web_data_folder"], "overview.json"), "w", encoding="utf-8") as f:
     json.dump(output, f, ensure_ascii=False, indent=2, sort_keys=True)
 
 for id, org in output["organizations"].items():

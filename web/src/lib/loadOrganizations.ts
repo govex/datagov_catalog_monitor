@@ -8,7 +8,7 @@ const parseCustomDate = (dateStr: string): Date => {
 
 // Function to load and parse JSON data
 export async function loadHomePageData(): Promise<{ catalogData: CatalogData }> {
-    const response = await fetch('/data/organizations.json'); // Load from static file
+    const response = await fetch('/data/overview.json'); // Load from static file
     if (!response.ok) {
         throw new Error("Failed to load JSON data");
     }
