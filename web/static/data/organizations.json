@@ -239,14 +239,14 @@
       "↓": 0
     },
     {
-      "n": 274746,
+      "n": 274403,
       "t": "2025-03-03T07:03:23+00:00",
-      "Δ": 344,
-      "↑": 344,
+      "Δ": 1,
+      "↑": 1,
       "↓": 0
     }
   ],
-  "last_updated": "2025-03-03T17:13:45.693533+00:00",
+  "last_updated": "2025-03-03T17:23:35.928870+00:00",
   "organizations": {
     "0349e8bf-a476-4e31-b97e-cbcab1dec4cb": {
       "approval_status": "approved",
@@ -23500,37 +23500,6 @@
       "title": "Department of the Treasury",
       "type": "organization"
     },
-    "a5a06e49-a446-476f-af16-32fc93c4f18f": {
-      "approval_status": "approved",
-      "catalog_entry_counts": [
-        {
-          "n": 343,
-          "t": "2025-03-03T07:03:23+00:00",
-          "Δ": 0,
-          "↑": 343,
-          "↓": 0
-        }
-      ],
-      "created": "2020-11-10T15:27:40.660679",
-      "description": "",
-      "id": "a5a06e49-a446-476f-af16-32fc93c4f18f",
-      "image_url": "https://raw.githubusercontent.com/GSA/logo/refs/heads/master/opendataphilly-black-med.png",
-      "is_organization": true,
-      "name": "city-of-philadelphia",
-      "organization_id": "a5a06e49-a446-476f-af16-32fc93c4f18f",
-      "resource_entry_counts": [
-        {
-          "n": 2250,
-          "t": "2025-03-03T07:03:23+00:00",
-          "Δ": 0,
-          "↑": 343,
-          "↓": 0
-        }
-      ],
-      "state": "active",
-      "title": "City of Philadelphia",
-      "type": "organization"
-    },
     "a65bf892-ca10-45e5-88f7-9cbaa4bdbfca": {
       "approval_status": "approved",
       "catalog_entry_counts": [
@@ -32929,10 +32898,10 @@
       "↓": 0
     },
     {
-      "n": 1759232,
+      "n": 1756982,
       "t": "2025-03-03T07:03:23+00:00",
-      "Δ": 2252,
-      "↑": 344,
+      "Δ": 2,
+      "↑": 1,
       "↓": 0
     }
   ]
