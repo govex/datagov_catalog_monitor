@@ -84,8 +84,9 @@ def collect_catalog_info(catalog: pl.LazyFrame) -> dict:
     catalog_info = {}
 
     catalog_counts_by_organization = catalog \
-        .group_by("organization") \
+        .group_by(pl.col("organization").struct.field("id").alias("organization_id")) \
         .agg([
+            pl.col("organization").first().alias("organization"),
             pl.len().alias("catalog_count"),
             pl.col("resources").list.len().sum().alias("resource_count")
         ]) \
@@ -148,6 +149,7 @@ for i in range(len(folders) - 1):
     with open(filename, mode="w") as file:
         json.dump(result, file)
         logging.debug(f"saved statistics to {file.name}...")
+        logging.debug(f"added: {len(result['deltas']['added'])}, removed: {len(result['deltas']['removed'])}")
 
 
 # %%
