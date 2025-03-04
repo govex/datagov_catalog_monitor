@@ -43,9 +43,6 @@ export async function loadHomePageData(): Promise<{ catalogData: CatalogData }> 
     rawData.organizations = Object.values(rawData.organizations) as Organization[];
     rawData.organizations.sort((a, b) => a.title.localeCompare(b.title));
 
-    console.log(rawData);
-
-
     return { catalogData:rawData };
 }
 
