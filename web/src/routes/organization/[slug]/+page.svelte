@@ -30,8 +30,8 @@
 
 
 <Timeline>
-    {#each Object.entries(organization.catalog_entry_counts) as [date, count], i}
-        <TimelineItem title={count.toString()} date={ date } dateFormat="full-date">
+    {#each organization.catalog_entry_counts as {t, n}, i}
+        <TimelineItem title={n.toString()} date={ t } dateFormat="full-date">
             &nbsp;
                 <!-- <div class="flex-1">
                     <p class="text-sm text-gray-500 dark:text-gray-400">
