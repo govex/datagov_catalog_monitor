@@ -3,13 +3,13 @@
 import boto3
 from datetime import datetime, timezone
 import json
+import logging
 import pandas as pd
+from pathlib import Path
 import os
 import requests
 from requests.exceptions import RequestException
 import time
-import logging
-from pathlib import Path
 
 # Set up logging
 logging.basicConfig(
@@ -94,116 +94,155 @@ def get_package_list(start, rows, timeout=request_timeout, retries=max_retries, 
     for attempt in range(retries):
         try:
             response = requests.get(fetch_url, timeout=timeout)
-            response.raise_for_status()
+            response.raise_for_status()  # Will raise an exception if HTTP status indicates error
+            
             server_response = response.json()
+            if not server_response.get('success', False):
+                # API indicates failure even though HTTP status was 200
+                logger.error(f"❌ API returned application error for URL: {fetch_url}")
+                if attempt < retries - 1:
+                    retry_delay = backoff ** attempt
+                    logger.info(f"🔄 Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+                return None
+                
+            # Both HTTP and API level success
             return server_response.get('result', {}).get('results', [])
             
-        except (RequestException, json.JSONDecodeError) as e:
-            logger.warning(f"⚠️ Attempt {attempt+1} failed: {e}")
+        except requests.exceptions.HTTPError as e:
+            # HTTP status code error
+            logger.warning(f"⚠️ HTTP error (status {response.status_code}) for URL {fetch_url}: {e}")
             if attempt < retries - 1:
-                retry_delay = backoff ** attempt  # Exponential backoff
+                retry_delay = backoff ** attempt
                 logger.info(f"🔄 Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
             else:
-                logger.error(f"❌ All {retries} attempts failed")
-                log_error_to_s3(fetch_url, e, start, rows)
-                return []
+                logger.error(f"❌ All {retries} HTTP attempts failed for URL {fetch_url}")
+                return None
+                
+        except (RequestException, json.JSONDecodeError) as e:
+            # Other request errors (timeout, connection, invalid JSON, etc)
+            logger.warning(f"⚠️ Request failed for URL {fetch_url}: {e}")
+            if attempt < retries - 1:
+                retry_delay = backoff ** attempt
+                logger.info(f"🔄 Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"❌ All {retries} attempts failed for URL {fetch_url}: {e}")
+                return None
 
-# it's a function because it can happen in several places
-def log_error_to_s3(url, error, start, rows):
-    error_details = {
-        "timestamp": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S"),
-        "url": url,
-        "error": str(error),
-        "start": start,
-        "rows": rows
-    }
-    error_file = f"{run_folder}/errors/error_{start:06d}_{start+rows:06d}.json"
+def process_and_save_data(package_list, start, rows, start_time=None):
+    """Process package list data and save to both S3 and local cache.
+    Returns True if successful, False if there was an error."""
     try:
+        valid_lines = []
+        error_lines = []
+
+        for i, data in enumerate(package_list):
+            json_object = json.dumps(data)
+            check_length = len(json_object.splitlines())
+            
+            # checking for cases where we have invalid newline delimiters
+            if check_length == 1:
+                valid_lines.append(json_object)
+            else:
+                # error if we have more than 1 new line breaks in an object
+                logger.error(f'❌ Error in id = {data["id"]} at line number = {i}')
+                error_lines.append(json_object)
+
+        # creating an ndjson object
+        clean_ndjson_object = "\n".join(valid_lines)
+        file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.ndjson'
+
         s3.put_object(
-            Body=json.dumps(error_details, indent=4),
+            Body=clean_ndjson_object,
             Bucket=bucket_name,
-            Key=f"Catalog/{error_file}"
+            Key=f"Catalog/{file_name}"
         )
-        logger.warning(f"🚨 Error log saved to S3: {error_file}")
+
+        # also save the data to the local cache directory
+        local_file = timestamp_dir / f'download_{start:06d}_{start+rows:06d}.ndjson'
+        local_file.write_text(clean_ndjson_object)
+
+        if start_time:
+            end_time = time.time()
+            logger.info(f"✅ Success: Rows {start} - {start+rows} written to files ({end_time - start_time:.2f} seconds)")
+        else:
+            logger.info(f"✅ Success: Rows {start} - {start+rows} written to files")
+            
+        return True
     except Exception as e:
-        logger.error(f"❌ Failed to log error to S3: {e}")
+        logger.error(f"❌ Error processing rows {start} - {start+rows}: {e}")
+        return False
 
 # %%
 # get the data
 
-# run the loop until we have fetched all records, plus a buffer, as the catalog can change while we're running
-end = get_count_of_records() + 5000
+# Keep track of failed ranges to retry later
+failed_ranges = []
+
+# Get initial count
+initial_count = get_count_of_records()
+end = initial_count + 5000
+
+# First pass: try to get all records
 while start < end:
     start_time = time.time()
-    fetch_url = f"https://catalog.data.gov/api/3/action/package_search?start={start}&rows={rows}"
-    logger.info(f"🔍 Fetching: {fetch_url}")
-
-    # Retry logic
-    success = False
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(fetch_url, timeout=request_timeout)
-            response.raise_for_status()
-            server_response = response.json()
-            total_packages = server_response.get('result', {}).get('count', 0)
-            package_list = server_response.get('result', {}).get('results', [])
-            success = True
-            break  # Exit retry loop on success
-
-        except (RequestException, json.JSONDecodeError) as e:
-            logger.warning(f"⚠️ Attempt {attempt+1} failed: {e}")
-            if attempt < max_retries - 1:
-                retry_delay = 2 ** attempt  # Exponential backoff
-                logger.info(f"🔄 Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                log_error_to_s3(fetch_url, e, start, rows)
-                start += rows
-                break
-
-    if success:
-        if package_list:
-            try:
-                valid_lines = []
-                error_lines = []
-
-                for i, data in enumerate(package_list):
-                    json_object = json.dumps(data)
-                    check_length = len(json_object.splitlines())
-                    
-                    # checking for cases where we have invalid newline delimiters
-                    if check_length == 1:
-                        valid_lines.append(json_object)
-                    else:
-                        # error if we have more than 1 new line breaks in an object
-                        logger.error(f'❌ Error in id = {data["id"]} at line number = {i}')
-                        error_lines.append(json_object)
-
-                # creating an ndjson object
-                clean_ndjson_object = "\n".join(valid_lines)
-                file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.ndjson'
-
-                s3.put_object(
-                    Body=clean_ndjson_object,
-                    Bucket=bucket_name,
-                    Key=f"Catalog/{file_name}"
-                )
-
-                # also save the data to the local cache directory
-                local_file = timestamp_dir / f'download_{start:06d}_{start+rows:06d}.ndjson'
-                local_file.write_text(clean_ndjson_object)
-
-                end_time = time.time()
-                logger.info(f"✅ Success: Rows {start} - {start+rows} of {total_packages} written to AWS: ({end_time - start_time:.2f} seconds)")
-            except Exception as e:
-                logger.error(f"❌ Error saving rows {start} - {start+rows} of {total_packages} to S3: {e}")
-        else:
-            logger.warning("🟡 No data to save; skipping")
+    package_list = get_package_list(start, rows)
+    
+    if package_list is None:
+        # If we got an error, mark this range for retry
+        failed_ranges.append((start, rows))
+        logger.warning(f"🔄 Adding range {start}-{start+rows} to retry queue")
         start += rows
+        continue
+    elif not package_list:
+        # If we got zero results but no error, log and continue
+        logger.info(f"ℹ️ No results for range {start}-{start+rows}, moving on")
+        start += rows
+        continue
 
+    if not process_and_save_data(package_list, start, rows, start_time):
+        failed_ranges.append((start, rows))
+    
+    start += rows
+
+# Retry failed ranges if the total count hasn't changed
+if failed_ranges:
+    logger.info(f"🔄 Attempting to retry {len(failed_ranges)} failed ranges...")
+    current_count = get_count_of_records()
+    
+    unresolved_failures = []  # Track failures that couldn't be fixed
+    
+    if current_count == initial_count:
+        for retry_start, retry_rows in failed_ranges:
+            logger.info(f"🔄 Retrying range {retry_start}-{retry_start+retry_rows}")
+            package_list = get_package_list(retry_start, retry_rows)
+            
+            if package_list is None:
+                logger.error(f"❌ Final retry failed for range {retry_start}-{retry_start+retry_rows}")
+                unresolved_failures.append((retry_start, retry_rows))
+                continue
+            elif not package_list:
+                logger.info(f"ℹ️ No results for range {retry_start}-{retry_start+retry_rows} on retry")
+                continue
+
+            if not process_and_save_data(package_list, retry_start, retry_rows):
+                unresolved_failures.append((retry_start, retry_rows))
+                logger.error(f"❌ Final retry failed for range {retry_start}-{retry_start+retry_rows}")
+            else:
+                logger.info(f"✅ Successfully retried range {retry_start}-{retry_start+retry_rows}")
+    else:
+        logger.warning(f"⚠️ Record count changed from {initial_count} to {current_count}, skipping retries")
+        unresolved_failures = failed_ranges  # Consider all failures as unresolved if count changed
 
 # %%
 # done
 logger.info(f"✅ Completed: {time.time() - all_start:.2f} seconds")
+
+# Raise exception if there were any unresolved failures
+if unresolved_failures:
+    failure_ranges_str = ", ".join([f"{start}-{start+rows}" for start, rows in unresolved_failures])
+    raise RuntimeError(f"Failed to retrieve {len(unresolved_failures)} ranges after all retries: {failure_ranges_str}")
 
