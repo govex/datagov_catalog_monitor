@@ -8,15 +8,26 @@ on:
 jobs:
   run-script:
     runs-on: ubuntu-latest
+    env:
+      DATA_CACHE_DIR: data
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up cached python environment
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+          cache: 'pip'
+
+      - name: Cache data directory
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DATA_CACHE_DIR }}
+          key: ${{ runner.os }}-data-cache
+          restore-keys: |
+            ${{ runner.os }}-data-
 
       - name: Install dependencies
         run: |
@@ -28,4 +39,5 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
+          DATA_CACHE_DIR: ${{ env.DATA_CACHE_DIR }}
         run: python scripts/get_datagov_catalog/get_datagov_catalog_serial.py
