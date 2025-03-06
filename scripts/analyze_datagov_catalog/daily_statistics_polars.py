@@ -1,4 +1,3 @@
-
 # %%
 # imports and initialization
 import glob
@@ -6,6 +5,7 @@ import json
 import logging
 import polars as pl
 import os
+from pathlib import Path
 import time
 
 logging.basicConfig(
@@ -22,10 +22,10 @@ logging.debug("startng up...")
 
 local_config = {
     "input": {
-        "data_folder": "../../data/data_gov_catalog_ndjson"
+        "data_folder": Path(os.environ["DATA_CACHE_DIR"]) / "data_gov_catalog_ndjson"
     },
     "output": {
-        "statistics_folder": "../../data/daily_statistics"
+        "statistics_folder": Path(os.environ["DATA_CACHE_DIR"]) / "daily_statistics"
     }
 }
 
@@ -40,35 +40,34 @@ logging.debug(f"excluded organizations: {len(excluded_organizations)}")
 
 # get the most recent catalog folders going back the specified number of cycles
 # cycles usually means days but that's not a strict rule;
-def get_recent_catalog_folders(root_catalog_folder: str = None, cycles: int = 1) -> str:
+def get_recent_catalog_folders(root_catalog_folder: Path = None, cycles: int = 1) -> list[Path]:
     if root_catalog_folder:
-        folders = [os.path.join(root_catalog_folder, f) for f in os.listdir(root_catalog_folder) if os.path.isdir(os.path.join(root_catalog_folder, f))]
-        folders.sort(key=lambda x: os.path.basename(x), reverse=True)
+        folders = [p for p in root_catalog_folder.iterdir() if p.is_dir()]
+        folders.sort(key=lambda x: x.name, reverse=True)
         if folders:
             return folders[:cycles+1]
     return None
 
-def get_date_from_folder_name(folder_name: str = None) -> str:
-    if folder_name:
-        return os.path.basename(folder_name)
+def get_date_from_folder_name(folder_path: Path = None) -> str:
+    if folder_path:
+        return folder_path.name
 
 # get the list of json files in the folder
-def get_json_file_list(path: str = None) -> list:
+def get_json_file_list(path: Path = None) -> list[Path]:
     if path:
-        return glob.glob(f"{path}/*.ndjson")
+        return list(path.glob("*.ndjson"))
     return []
 
 # get the list of error files in the folder
-def get_error_file_list(path: str = None) -> list:
+def get_error_file_list(path: Path = None) -> list[Path]:
     if path:
-        return glob.glob(f"{path}/errors/*.json")
+        return list(path.glob("errors/*.json"))
     return []
 
 # retrieve a json file and parse
-def get_json(file_path: str = None) -> list | dict:
+def get_json(file_path: Path = None) -> list | dict:
     if file_path:
-        with open(file_path, "r") as file:
-            return json.load(file)
+        return json.loads(file_path.read_text())
     return {}
 
 # filter the catalog to remove duplicates and excluded organizations
@@ -122,7 +121,7 @@ logging.debug("functions loaded")
 # this function call supports a cycles parameter to go back further than the default 1
 folders = get_recent_catalog_folders(local_config["input"]["data_folder"])
 
-os.makedirs(local_config["output"]["statistics_folder"], exist_ok=True)
+local_config["output"]["statistics_folder"].mkdir(parents=True, exist_ok=True)
 
 for i in range(len(folders) - 1):
     logging.debug(f"processing {folders[i]}...")
@@ -138,18 +137,17 @@ for i in range(len(folders) - 1):
     # generate the result object (this can take some time for each pass)
     result = {
         "date": datetimestring,
-        "current_fileset": folders[i],
-        "comparison_fileset": folders[i + 1],
+        "current_fileset": str(folders[i]),
+        "comparison_fileset": str(folders[i + 1]),
         "counts": collect_catalog_info(catalog),
         "deltas": get_catalog_differences(older=catalog_older, newer=catalog)
     }
 
     # output the result
-    filename = os.path.join(local_config["output"]["statistics_folder"], f"{datetimestring}.json")
-    with open(filename, mode="w") as file:
-        json.dump(result, file)
-        logging.debug(f"saved statistics to {file.name}...")
-        logging.debug(f"added: {len(result['deltas']['added'])}, removed: {len(result['deltas']['removed'])}")
+    filename = local_config["output"]["statistics_folder"] / f"{datetimestring}.json"
+    filename.write_text(json.dumps(result))
+    logging.debug(f"saved statistics to {filename}...")
+    logging.debug(f"added: {len(result['deltas']['added'])}, removed: {len(result['deltas']['removed'])}")
 
 
 # %%
