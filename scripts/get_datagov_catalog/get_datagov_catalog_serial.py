@@ -44,11 +44,10 @@ if cache_dir is None:
 # Make sure the cache directory exists
 cache_dir.mkdir(exist_ok=True)
 
-# Create timestamp subfolder
+# Create timestamp for both local and S3 paths
 timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
 timestamp_dir = cache_dir / timestamp
 timestamp_dir.mkdir(exist_ok=True)
-
 
 # Initialize Boto3 client using environment variables
 s3 = boto3.client(
@@ -59,17 +58,12 @@ s3 = boto3.client(
 )
 
 bucket_name = "govex-us-data-archive"
+s3_base_prefix = "Catalog/data_gov_catalog_ndjson"  # Base S3 prefix
 
 start = 0           # Start index
 rows = 1000         # Number of rows to fetch per request
 request_timeout = 60 # Timeout in seconds
 max_retries = 5     # Maximum number of retries
-
-# output folder
-output_base = "data_gov_catalog_ndjson"
-# Create a folder named with the current ISO8601 timestamp
-timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-run_folder = os.path.join(output_base, timestamp)
 
 results = []
 
@@ -78,6 +72,17 @@ results = []
 
 # define a function to get the count of records
 def get_count_of_records():
+    """Query the Data.gov API to get the total number of records available.
+    
+    Makes a single request to the package_search endpoint with rows=0 to get just the count.
+    
+    Returns:
+        int: Total number of records available in the catalog
+        
+    Raises:
+        RequestException: If there's a network or API error
+        json.JSONDecodeError: If the response isn't valid JSON
+    """
     fetch_url = f"https://catalog.data.gov/api/3/action/package_search?start=0&rows=0"
     response = requests.get(fetch_url, timeout=request_timeout)
     response.raise_for_status()
@@ -87,7 +92,24 @@ def get_count_of_records():
     return record_count
 
 # define a function to get the package list, with fallback logic
-def get_package_list(start, rows, timeout=request_timeout, retries=max_retries, backoff=2):
+def get_catalog_records(start, rows, timeout=request_timeout, retries=max_retries, backoff=2):
+    """Fetch a range of package records from the Data.gov API with retry logic.
+    
+    Args:
+        start (int): Starting index for the range of records to fetch
+        rows (int): Number of records to fetch
+        timeout (int, optional): Request timeout in seconds. Defaults to request_timeout.
+        retries (int, optional): Maximum number of retry attempts. Defaults to max_retries.
+        backoff (int, optional): Base for exponential backoff between retries. Defaults to 2.
+        
+    Returns:
+        list | None: List of package records if successful, None if all retries failed
+              Empty list means successful request but no records in that range
+              
+    Note:
+        The function implements exponential backoff for retries.
+        For each retry attempt n, it waits backoff^n seconds before retrying.
+    """
     fetch_url = f"https://catalog.data.gov/api/3/action/package_search?start={start}&rows={rows}"
     logger.info(f"🔍 Fetching: {fetch_url}")
     
@@ -133,8 +155,26 @@ def get_package_list(start, rows, timeout=request_timeout, retries=max_retries, 
                 return None
 
 def process_and_save_data(package_list, start, rows, start_time=None):
-    """Process package list data and save to both S3 and local cache.
-    Returns True if successful, False if there was an error."""
+    """Process a list of package records and save them to both S3 and local cache.
+    
+    Processes the package records into NDJSON format, handling any records with
+    invalid newlines. Saves the processed data to both S3 and the local cache directory.
+    
+    Args:
+        package_list (list): List of package records to process
+        start (int): Starting index of this batch of records
+        rows (int): Number of records in this batch
+        start_time (float, optional): Start time of processing for timing logs.
+            If provided, logs will include processing duration.
+            
+    Returns:
+        bool: True if processing and saving was successful, False if there were any errors
+        
+    Note:
+        Files are saved with names in the format:
+        - S3: {bucket_name}/{s3_base_prefix}/{timestamp}/download_{start:06d}_{start+rows:06d}.ndjson
+        - Local: {timestamp_dir}/download_{start:06d}_{start+rows:06d}.ndjson
+    """
     try:
         valid_lines = []
         error_lines = []
@@ -153,15 +193,18 @@ def process_and_save_data(package_list, start, rows, start_time=None):
 
         # creating an ndjson object
         clean_ndjson_object = "\n".join(valid_lines)
-        file_name = f'{run_folder}/download_{start:06d}_{start+rows:06d}.ndjson'
-
+        
+        # Construct S3 key using consistent timestamp
+        s3_key = f"{s3_base_prefix}/{timestamp}/download_{start:06d}_{start+rows:06d}.ndjson"
+        
+        # Save to S3
         s3.put_object(
             Body=clean_ndjson_object,
             Bucket=bucket_name,
-            Key=f"Catalog/{file_name}"
+            Key=s3_key
         )
 
-        # also save the data to the local cache directory
+        # Save to local cache
         local_file = timestamp_dir / f'download_{start:06d}_{start+rows:06d}.ndjson'
         local_file.write_text(clean_ndjson_object)
 
@@ -189,7 +232,7 @@ end = initial_count + 5000
 # First pass: try to get all records
 while start < end:
     start_time = time.time()
-    package_list = get_package_list(start, rows)
+    package_list = get_catalog_records(start, rows)
     
     if package_list is None:
         # If we got an error, mark this range for retry
@@ -209,16 +252,15 @@ while start < end:
     start += rows
 
 # Retry failed ranges if the total count hasn't changed
+unresolved_failures = []  # Track failures that couldn't be fixed
 if failed_ranges:
     logger.info(f"🔄 Attempting to retry {len(failed_ranges)} failed ranges...")
     current_count = get_count_of_records()
     
-    unresolved_failures = []  # Track failures that couldn't be fixed
-    
     if current_count == initial_count:
         for retry_start, retry_rows in failed_ranges:
             logger.info(f"🔄 Retrying range {retry_start}-{retry_start+retry_rows}")
-            package_list = get_package_list(retry_start, retry_rows)
+            package_list = get_catalog_records(retry_start, retry_rows)
             
             if package_list is None:
                 logger.error(f"❌ Final retry failed for range {retry_start}-{retry_start+retry_rows}")
