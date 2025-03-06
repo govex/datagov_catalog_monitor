@@ -19,16 +19,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Cache data directory
-        uses: actions/cache@v3
+      - name: Download data catalog artifact
+        uses: actions/download-artifact@v4
         with:
+          name: data-catalog
           path: ${{ env.DATA_CACHE_DIR }}
-          key: ${{ runner.os }}-data-cache
-          restore-keys: |
-            ${{ runner.os }}-data-
 
       - name: Run list files script
         env:
           DATA_CACHE_DIR: ${{ env.DATA_CACHE_DIR }}
-        run: python scripts/list_cache_files.py
+        run: python scripts/list_files.py
 
