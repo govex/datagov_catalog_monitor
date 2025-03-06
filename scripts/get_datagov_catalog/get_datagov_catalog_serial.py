@@ -26,23 +26,20 @@ all_start = time.time()
 '''
 You can create an access key here: https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/security_credentials?section=IAM_credentials
 '''
-aws_access_key = os.environ.get("AWS_ACCESS_KEY_ID", None)
-aws_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
-aws_region = os.environ.get("AWS_REGION", None)
+# Validate all required environment variables are present
+required_env_vars = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION", "DATA_CACHE_DIR"]
+missing_vars = [var for var in required_env_vars if var not in os.environ]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-# Get the cache directory from environment variable
-cache_dir = Path(os.environ['DATA_CACHE_DIR'])
-
-# crash the script if the credentials are not found
-if aws_access_key is None or aws_secret_key is None or aws_region is None:
-    raise ValueError("AWS credentials or region not found in environment variables")
-
-# crash the script if the cache directory is not found
-if cache_dir is None:
-    raise ValueError("Data cache directory not found in environment variables")
+# Get environment variables now that we know they exist
+aws_access_key = os.environ["AWS_ACCESS_KEY_ID"]
+aws_secret_key = os.environ["AWS_SECRET_ACCESS_KEY"]
+aws_region = os.environ["AWS_REGION"]
+cache_dir = Path(os.environ["DATA_CACHE_DIR"]) / 'data_gov_catalog_ndjson'
 
 # Make sure the cache directory exists
-cache_dir.mkdir(exist_ok=True)
+cache_dir.mkdir(parents=True, exist_ok=True)
 
 # Create timestamp for both local and S3 paths
 timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
