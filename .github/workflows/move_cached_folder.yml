@@ -1,0 +1,39 @@
+# move_cache_folder.yml
+name: Move Cache Folder
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  move-folder:
+    runs-on: ubuntu-latest
+    env:
+      DATA_CACHE_DIR: data
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Cache data directory
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DATA_CACHE_DIR }}
+          key: ${{ runner.os }}-data-cache
+          restore-keys: |
+            ${{ runner.os }}-data-
+
+      - name: Create target directory and move folder
+        run: |
+          mkdir -p ${{ env.DATA_CACHE_DIR }}/data_gov_catalog_ndjson
+          mv ${{ env.DATA_CACHE_DIR }}/20250306T070332 ${{ env.DATA_CACHE_DIR }}/data_gov_catalog_ndjson/
+
+      - name: Save updated cache
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ env.DATA_CACHE_DIR }}
+          key: ${{ runner.os }}-data-cache
