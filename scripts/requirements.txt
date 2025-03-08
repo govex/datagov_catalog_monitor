@@ -7,3 +7,4 @@ pydash==8.0.5
 requests==2.31.0
 requests-toolbelt==1.0.0
 dask==2023.10.1
+polars==1.21.0
