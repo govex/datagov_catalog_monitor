@@ -80,6 +80,7 @@ jobs:
           find ${{ env.DATA_CACHE_DIR }}/daily_statistics -type f -exec du -m {} \; | while read size file; do
             if [ "$size" -gt 50 ]; then
               echo "File $file is larger than 50MB, adding to Git LFS"
+              echo "  (this should have no effect on already tracked files)"
               git lfs track "$file"
               git add .gitattributes
             fi
