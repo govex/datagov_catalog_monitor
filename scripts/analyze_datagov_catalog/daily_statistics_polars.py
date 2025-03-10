@@ -30,7 +30,7 @@ local_config = {
 }
 
 # load the list of excluded organizations
-with open("excluded_organizations.csv", "r", encoding="utf-8") as f:
+with open(Path(os.environ["DATA_CACHE_DIR"]) / "excluded_organizations.csv", "r", encoding="utf-8") as f:
     excluded_organizations = f.read().splitlines()
 
 logging.debug(f"excluded organizations: {len(excluded_organizations)}")
