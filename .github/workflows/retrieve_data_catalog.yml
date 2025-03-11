@@ -29,14 +29,15 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'scripts/requirements.txt'
 
-      # Download yesterday's data from the previous successful run
-      # continue-on-error allows the workflow to proceed even if no previous data exists
-      - name: Download previous data
-        uses: actions/download-artifact@v4
-        continue-on-error: true  # First run or failed previous run should continue
+      # Restore previous data from cache
+      - name: Restore previous data from cache
+        uses: actions/cache/restore@v4
+        id: cache-restore
         with:
-          name: data-catalog
           path: ${{ env.DATA_CACHE_DIR }}
+          key: data-catalog-${{ github.run_id }}  # Current run's cache key
+          restore-keys: |
+            data-catalog-  # Restore any previous cache with this prefix
 
       # Install all required Python packages
       - name: Install dependencies
@@ -93,11 +94,10 @@ jobs:
             echo "No changes to commit"
           fi
 
-      # Save today's data as an artifact for tomorrow's comparison
-      # retention-days: 2 ensures we keep the data long enough for the next run
-      - name: Upload data for next run
-        uses: actions/upload-artifact@v4
+      # Save today's data in cache for the next run
+      - name: Save data to cache
+        uses: actions/cache/save@v4
+        if: success()  # Only cache if the workflow succeeds
         with:
-          name: data-catalog
           path: ${{ env.DATA_CACHE_DIR }}
-          retention-days: 2  # Only need previous day for comparison
+          key: data-catalog-${{ github.run_id }}
