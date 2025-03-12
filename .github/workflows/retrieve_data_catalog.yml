@@ -30,14 +30,14 @@ jobs:
           cache-dependency-path: 'scripts/requirements.txt'
 
       # Restore previous data from cache
+      # there won't be a cache for the current run, so restore-keys is how we get the previous run's cache
       - name: Restore previous data from cache
         uses: actions/cache/restore@v4
         id: cache-restore
         with:
           path: ${{ env.DATA_CACHE_DIR }}
           key: data-catalog-${{ github.run_id }}  # Current run's cache key
-          restore-keys: |
-            data-catalog-  # Restore any previous cache with this prefix
+          restore-keys: data-catalog-    
 
       # Install all required Python packages
       - name: Install dependencies
