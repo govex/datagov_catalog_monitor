@@ -59,7 +59,7 @@ s3_base_prefix = "Catalog/data_gov_catalog_ndjson"  # Base S3 prefix
 
 start = 0           # Start index
 rows = 1000         # Number of rows to fetch per request
-request_timeout = 60 # Timeout in seconds
+request_timeout = 90 # Timeout in seconds
 max_retries = 5     # Maximum number of retries
 
 results = []
@@ -282,6 +282,7 @@ logger.info(f"✅ Completed: {time.time() - all_start:.2f} seconds")
 
 # Raise exception if there were any unresolved failures
 if unresolved_failures:
-    failure_ranges_str = ", ".join([f"{start}-{start+rows}" for start, rows in unresolved_failures])
-    raise RuntimeError(f"Failed to retrieve {len(unresolved_failures)} ranges after all retries: {failure_ranges_str}")
+    failure_ranges_str = ", ".join([f"{start}-{start+rows}" for start, rows in failed_ranges])
+    failure_ranges_unresolved_str = ", ".join([f"{start}-{start+rows}" for start, rows in unresolved_failures])
+    raise RuntimeError(f"Failed to retrieve {len(unresolved_failures)} ranges after all retries:\n{failure_ranges_unresolved_str} \nOriginal ranges:\n{failure_ranges_str}")
 
