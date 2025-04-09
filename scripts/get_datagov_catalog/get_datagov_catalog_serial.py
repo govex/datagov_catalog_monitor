@@ -58,8 +58,8 @@ bucket_name = "govex-us-data-archive"
 s3_base_prefix = "Catalog/data_gov_catalog_ndjson"  # Base S3 prefix
 
 start = 0           # Start index
-rows = 1000         # Number of rows to fetch per request
-request_timeout = 90 # Timeout in seconds
+rows = 100         # Number of rows to fetch per request
+request_timeout = 60 # Timeout in seconds
 max_retries = 5     # Maximum number of retries
 
 results = []
