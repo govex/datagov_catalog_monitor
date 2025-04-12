@@ -14,7 +14,12 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)8s %(na
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger('s3transfer.tasks').setLevel(logging.WARNING)
 logging.getLogger('s3transfer.utils').setLevel(logging.WARNING)
-
+logging.getLogger('botocore').setLevel(logging.WARNING)
+logging.getLogger('botocore.hooks').setLevel(logging.WARNING)
+logging.getLogger('botocore.endpoint').setLevel(logging.WARNING)
+logging.getLogger('botocore.auth').setLevel(logging.WARNING)
+logging.getLogger('botocore.parsers').setLevel(logging.WARNING)
+logging.getLogger('botocore.retryhandler').setLevel(logging.WARNING)
 
 # Get environment variables
 aws_access_key = os.environ["AWS_ACCESS_KEY_ID"]
@@ -94,7 +99,7 @@ s3_key = f"{s3_base_prefix}/{current_utc_time}/_organizations.json"
 try:
     upload_to_s3(orgs_file, s3_key)
 except Exception as e:
-    logging.warning(f"❌ All retry attempts failed for uploading organizations.json to S3: {str(e)}")
+    logging.critical(f"❌ All retry attempts failed for uploading _organizations.json to S3: {str(e)}")
 
 # %%
 # filter results to only include federal organizations
@@ -116,7 +121,7 @@ s3_key = f"{s3_base_prefix}/{current_utc_time}/_federal_organizations.json"
 try:
     upload_to_s3(fed_orgs_file, s3_key)
 except Exception as e:
-    logging.warning(f"❌ All retry attempts failed for uploading federal_organizations.json to S3: {str(e)}")
+    logging.critical(f"❌ All retry attempts failed for uploading _federal_organizations.json to S3: {str(e)}")
 
 # %%
 # get datasets for each federal organization
@@ -171,7 +176,7 @@ for org in organizations:
     try:
         upload_to_s3(output_file, s3_key)
     except Exception as e:
-        logging.error(f"❌ All retry attempts failed for uploading {org['name']}.ndjson to S3: {str(e)}")
+        logging.critical(f"❌ All retry attempts failed for uploading {org['name']}.ndjson to S3: {str(e)}")
 
     logging.info(f"✅ Retrieved {len(all_packages)} datasets for organization {org['name']} (expected {org['package_count']})")
 
