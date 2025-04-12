@@ -53,7 +53,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           DATA_CACHE_DIR: ${{ env.DATA_CACHE_DIR }}
-        run: python scripts/get_datagov_catalog/get_datagov_catalog_serial.py
+        run: python scripts/catalog_scan_v2.py
 
       # Generate statistics by comparing today's data with yesterday's
       - name: Generate Daily Statistics
