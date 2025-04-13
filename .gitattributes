@@ -2,3 +2,4 @@ data/daily_statistics/20250130T000000.json filter=lfs diff=lfs merge=lfs -text
 data/daily_statistics/20250410T070352.json filter=lfs diff=lfs merge=lfs -text
 data/daily_statistics/20250411T070338.json filter=lfs diff=lfs merge=lfs -text
 data/daily_statistics/20250412T070312.json filter=lfs diff=lfs merge=lfs -text
+data/daily_statistics/20250413T070334.json filter=lfs diff=lfs merge=lfs -text
