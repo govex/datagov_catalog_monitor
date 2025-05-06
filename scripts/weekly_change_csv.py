@@ -8,6 +8,10 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
+# number of days back to compare the most recent data to
+comparison_age_days = 7
+second_comparison_age_days = 30  # Additional comparison period
+
 # Get cache directory from environment variable
 STATS_DIR = Path(os.getenv('DATA_CACHE_DIR', 'data')) / 'daily_statistics'
 if not STATS_DIR.exists():
@@ -37,13 +41,17 @@ org_stats = {}  # {org_id: {title, all_time_adds, all_time_removes, etc}}
 
 # Get current date from most recent file
 current_date = get_date_from_filename(json_files[-1])
-week_ago = current_date - timedelta(days=7)
+compare_date = current_date - timedelta(days=comparison_age_days)
+second_compare_date = current_date - timedelta(days=second_comparison_age_days)
 
 # %%
 # Process each file chronologically
 for json_file in json_files:
     file_date = get_date_from_filename(json_file)
-    is_last_week = file_date >= week_ago
+    # For 7-day period, only count files from the last 7 days
+    is_first_period = file_date >= compare_date
+    # For 30-day period, count all files from the last 30 days
+    is_second_period = file_date >= second_compare_date
     
     with open(json_file, 'r') as f:
         data = json.load(f)
@@ -56,13 +64,19 @@ for json_file in json_files:
                 'title': added['organization']['title'],
                 'all_time_removes': 0,
                 'all_time_adds': 0,
-                'week_removes': 0,
-                'week_adds': 0,
+                'first_period_removes': 0,
+                'first_period_adds': 0,
+                'second_period_removes': 0,
+                'second_period_adds': 0,
                 'current_total': 0
             }
         org_stats[org_id]['all_time_adds'] += 1
-        if is_last_week:
-            org_stats[org_id]['week_adds'] += 1
+        # Only count in first period if it's within the last 7 days
+        if is_first_period:
+            org_stats[org_id]['first_period_adds'] += 1
+        # Count in second period if it's within the last 30 days
+        if is_second_period:
+            org_stats[org_id]['second_period_adds'] += 1
             
     # Process removals
     for removed in data.get('deltas', {}).get('removed', []):
@@ -72,13 +86,17 @@ for json_file in json_files:
                 'title': removed['organization']['title'],
                 'all_time_removes': 0,
                 'all_time_adds': 0,
-                'week_removes': 0,
-                'week_adds': 0,
+                'first_period_removes': 0,
+                'first_period_adds': 0,
+                'second_period_removes': 0,
+                'second_period_adds': 0,
                 'current_total': 0
             }
         org_stats[org_id]['all_time_removes'] += 1
-        if is_last_week:
-            org_stats[org_id]['week_removes'] += 1
+        if is_first_period:
+            org_stats[org_id]['first_period_removes'] += 1
+        if is_second_period:
+            org_stats[org_id]['second_period_removes'] += 1
 
     # Update current totals from most recent file
     if json_file == json_files[-1]:
@@ -89,13 +107,13 @@ for json_file in json_files:
 
 # %%
 # Write results to CSV
-output_timestamp = current_date.strftime('%Y%m%dT%H%M%S')
+output_timestamp = f"{current_date.strftime('%Y%m%dT%H%M%S')}"
 output_file = WEEKLY_CHANGES_DIR / f'organization_changes_{output_timestamp}.csv'
 
 # Custom sorting function
 def sort_key(item):
     org_id, stats = item
-    net_change = stats['week_adds'] - stats['week_removes']
+    net_change = stats['second_period_adds'] - stats['second_period_removes']
     # First sort by category (negative=0, positive=1, zero=2)
     if net_change < 0:
         category = 0
@@ -120,12 +138,18 @@ with open(output_file, 'w', newline='') as f:
         'All-time Additions %',
         'All-time Net Change',
         'All-time Net Change %',
-        '7-day Removals',
-        '7-day Removals %',
-        '7-day Additions',
-        '7-day Additions %',
-        '7-day Net Change',
-        '7-day Net Change %',
+        f'{second_comparison_age_days}-day Removals',
+        f'{second_comparison_age_days}-day Removals %',
+        f'{second_comparison_age_days}-day Additions',
+        f'{second_comparison_age_days}-day Additions %',
+        f'{second_comparison_age_days}-day Net Change',
+        f'{second_comparison_age_days}-day Net Change %',
+        f'{comparison_age_days}-day Removals',
+        f'{comparison_age_days}-day Removals %',
+        f'{comparison_age_days}-day Additions',
+        f'{comparison_age_days}-day Additions %',
+        f'{comparison_age_days}-day Net Change',
+        f'{comparison_age_days}-day Net Change %',
         'Current Total'
     ])
     
@@ -149,12 +173,18 @@ with open(output_file, 'w', newline='') as f:
             safe_percentage(stats['all_time_adds'], current_total),
             stats['all_time_adds'] - stats['all_time_removes'],
             safe_percentage(stats['all_time_adds'] - stats['all_time_removes'], current_total),
-            stats['week_removes'],
-            safe_percentage(stats['week_removes'], current_total, force_negative=True),
-            stats['week_adds'],
-            safe_percentage(stats['week_adds'], current_total),
-            stats['week_adds'] - stats['week_removes'],
-            safe_percentage(stats['week_adds'] - stats['week_removes'], current_total),
+            stats['first_period_removes'],
+            safe_percentage(stats['first_period_removes'], current_total, force_negative=True),
+            stats['first_period_adds'],
+            safe_percentage(stats['first_period_adds'], current_total),
+            stats['first_period_adds'] - stats['first_period_removes'],
+            safe_percentage(stats['first_period_adds'] - stats['first_period_removes'], current_total),
+            stats['second_period_removes'],
+            safe_percentage(stats['second_period_removes'], current_total, force_negative=True),
+            stats['second_period_adds'],
+            safe_percentage(stats['second_period_adds'], current_total),
+            stats['second_period_adds'] - stats['second_period_removes'],
+            safe_percentage(stats['second_period_adds'] - stats['second_period_removes'], current_total),
             current_total
         ])
 
