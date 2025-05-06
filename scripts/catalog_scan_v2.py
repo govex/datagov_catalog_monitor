@@ -10,16 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 import boto3
 
 # configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)8s %(name)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-logging.getLogger('s3transfer.tasks').setLevel(logging.WARNING)
-logging.getLogger('s3transfer.utils').setLevel(logging.WARNING)
-logging.getLogger('botocore').setLevel(logging.WARNING)
-logging.getLogger('botocore.hooks').setLevel(logging.WARNING)
-logging.getLogger('botocore.endpoint').setLevel(logging.WARNING)
-logging.getLogger('botocore.auth').setLevel(logging.WARNING)
-logging.getLogger('botocore.parsers').setLevel(logging.WARNING)
-logging.getLogger('botocore.retryhandler').setLevel(logging.WARNING)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)8s %(name)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # Get environment variables
 aws_access_key = os.environ["AWS_ACCESS_KEY_ID"]
@@ -46,14 +37,14 @@ s3 = boto3.client(
 )
 
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=60),
-       before_sleep=lambda retry_state: logging.debug(f"⭕️ S3 upload attempt {retry_state.attempt_number} failed, retrying in {retry_state.next_action.sleep} seconds"))
+       before_sleep=lambda retry_state: logging.warning(f"⭕️ S3 upload attempt {retry_state.attempt_number} failed, retrying in {retry_state.next_action.sleep} seconds"))
 def upload_to_s3(file_path, s3_key):
     """Upload a file to S3 with retry logic."""
     try:
         s3.upload_file(str(file_path), bucket_name, s3_key)
         logging.info(f"✅ Uploaded {s3_key} to S3")
     except Exception as e:
-        logging.debug(f"⭕️ S3 upload failed with error: {str(e)}")
+        logging.error(f"⭕️ S3 upload failed with error: {str(e)}")
         raise e
 
 # %%
