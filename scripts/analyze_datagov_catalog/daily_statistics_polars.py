@@ -1,6 +1,5 @@
 # %%
 # imports and initialization
-import glob
 import json
 import logging
 import polars as pl
@@ -55,7 +54,7 @@ def get_date_from_folder_name(folder_path: Path = None) -> str:
 # get the list of json files in the folder
 def get_json_file_list(path: Path = None) -> list[Path]:
     if path:
-        return list(path.glob("*.ndjson"))
+        return [f for f in path.glob("*.ndjson") if f.stat().st_size > 0]
     return []
 
 # get the list of error files in the folder
