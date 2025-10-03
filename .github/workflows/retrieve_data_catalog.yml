@@ -21,6 +21,21 @@ jobs:
         with:
           lfs: true
 
+      # Check disk space before cleanup
+      - name: Check disk space (before cleanup)
+        run: df -h
+
+      # Clean up unnecessary packages to free disk space
+      - name: Clean up unnecessary packages
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          sudo docker builder prune -a
+
+      # Check disk space after cleanup
+      - name: Check disk space (after cleanup)
+        run: df -h
+
       # Set up Python and enable pip caching to speed up dependency installation
       - name: Set up cached python environment
         uses: actions/setup-python@v4
@@ -28,6 +43,10 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: 'scripts/requirements.txt'
+
+      # Check disk space after Python setup
+      - name: Check disk space (after Python setup)
+        run: df -h
 
       # Restore previous data from cache
       # there won't be a cache for the current run, so restore-keys is how we get the previous run's cache
@@ -45,6 +64,10 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f scripts/requirements.txt ]; then pip install -r scripts/requirements.txt; fi
 
+      # Check disk space after dependency installation
+      - name: Check disk space (after dependencies)
+        run: df -h
+
       # Retrieve today's data from data.gov
       # This creates a new timestamped folder in data_gov_catalog_ndjson
       - name: Run Python script
@@ -55,11 +78,19 @@ jobs:
           DATA_CACHE_DIR: ${{ env.DATA_CACHE_DIR }}
         run: python scripts/catalog_scan_v2.py
 
+      # Check disk space after data retrieval
+      - name: Check disk space (after data retrieval)
+        run: df -h
+
       # Generate statistics by comparing today's data with yesterday's
       - name: Generate Daily Statistics
         env:
           DATA_CACHE_DIR: ${{ env.DATA_CACHE_DIR }}
         run: python scripts/analyze_datagov_catalog/daily_statistics_polars.py
+
+      # Check disk space after statistics generation
+      - name: Check disk space (after statistics generation)
+        run: df -h
 
       # Remove yesterday's data, keeping only today's data for tomorrow's comparison
       # ls -t: list files by time (newest first)
@@ -70,6 +101,10 @@ jobs:
           # Keep only the most recent folder (today's data) in data_gov_catalog_ndjson
           cd ${{ env.DATA_CACHE_DIR }}/data_gov_catalog_ndjson && \
           ls -t | tail -n +2 | xargs -r rm -rf
+
+      # Check disk space after cleanup
+      - name: Check disk space (after cleanup)
+        run: df -h
 
       # Check for large files and handle Git LFS tracking
       - name: Handle Git LFS and Push Changes
@@ -94,6 +129,10 @@ jobs:
             echo "No changes to commit"
           fi
 
+      # Check disk space after Git operations
+      - name: Check disk space (after Git operations)
+        run: df -h
+
       # Save today's data in cache for the next run
       - name: Save data to cache
         uses: actions/cache/save@v4
@@ -101,3 +140,7 @@ jobs:
         with:
           path: ${{ env.DATA_CACHE_DIR }}
           key: data-catalog-${{ github.run_id }}
+
+      # Final disk space check
+      - name: Check disk space (final)
+        run: df -h
