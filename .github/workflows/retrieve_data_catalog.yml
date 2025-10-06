@@ -15,14 +15,8 @@ jobs:
       DATA_CACHE_DIR: data  # Directory where all data will be stored
 
     steps:
-      # Get the latest code from the repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-
       # Check disk space before cleanup
-      - name: Check disk space (before cleanup)
+      - name: Check disk space (after startup)
         run: df -h
 
       # Clean up unnecessary packages to free disk space
@@ -34,6 +28,16 @@ jobs:
 
       # Check disk space after cleanup
       - name: Check disk space (after cleanup)
+        run: df -h
+
+      # Get the latest code from the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Check disk space after checkout
+      - name: Check disk space after checkout
         run: df -h
 
       # Set up Python and enable pip caching to speed up dependency installation
