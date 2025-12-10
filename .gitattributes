@@ -20,3 +20,4 @@ data/daily_statistics/20250917T070602.json filter=lfs diff=lfs merge=lfs -text
 data/daily_statistics/20251004T070906.json filter=lfs diff=lfs merge=lfs -text
 data/daily_statistics/20251126T070834.json filter=lfs diff=lfs merge=lfs -text
 data/daily_statistics/20251127T070643.json filter=lfs diff=lfs merge=lfs -text
+data/daily_statistics/20251210T070800.json filter=lfs diff=lfs merge=lfs -text
